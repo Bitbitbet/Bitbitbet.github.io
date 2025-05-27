@@ -1,0 +1,342 @@
+
+    <html>
+      <head>
+        <title>Makefile HAHAHAHAH</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+      </head>
+      <body>
+        <div id='content'>
+    <h1 id="makefile">Makefile</h1>
+<p>This document is a brief introduction to Makefile syntax .</p>
+<h2 id="basic-syntax">Basic syntax</h2>
+<h3 id="targets">Targets</h3>
+<pre><code class="Makefile language-Makefile">target: [dependency list]
+    commands
+</code></pre>
+<ul>
+<li>target: A target. Its commands will be executed with <code>make target</code>.</li>
+<li>Dependency list: A space-separated list of files needed by the target. If the file does not exist, the corresponding target, which is the same name as the file, will be executed. The process is recursive.</li>
+<li>If one of the files in dependency list does not exist or more recent than the corresponding file for the current target, the current target will be executed. Otherwise it will not be executed. The rule applies to the execution both direct use of <code>make target</code> and due to dependencies.</li>
+</ul>
+<h3 id="phony-targets">Phony targets</h3>
+<p>syntax:</p>
+<pre><code>.PHONY: target
+target: [dependency list]
+    commands...
+</code></pre>
+<p>The <code>.PHONY: target</code> are used when the <code>target</code> never corresponds a file. Even though the dependencies are satisfied and the corresponding file exists, phony targets will not be discarded. Phony targets are usually regarded as functions or the <em>sub commands</em> of <code>make</code>.</p>
+<h3 id="variables">Variables</h3>
+<p>syntax: </p>
+<pre><code class="Makefile language-Makefile"># Setting (defining)
+# variable = ...
+# variable := ...
+# variable ?= ...
+
+# Using (expandation)
+variable = hello, world
+.PHONY: test
+test:
+    @echo $(variable) # equivalent as ${variable}; @ means do not to echo the command
+</code></pre>
+<p>Here, <code>make test</code> outputs: <code>hello, world</code>.</p>
+<h4 id="differences-between---and-">Differences between <code>=</code> <code>:=</code> and <code>?=</code>:</h4>
+<pre><code class="Makefile language-Makefile">a = b
+str1 = ${a}bcdefg
+str2 := ${a}bcdefg
+a = a
+
+.PHONY: test
+test:
+    @echo ${str1}
+    @echo ${str2}
+</code></pre>
+<p>The output will be:</p>
+<pre><code>abcdefg
+bbcdefg
+</code></pre>
+<p>That's because, when there's a variable expandation in the content of variable:</p>
+<ul>
+<li><code>str1 = ...</code> is called <em>lazy expansion</em>. Value of <code>str1</code> will change when the value of <code>a</code> changes.</li>
+<li><code>str2 := ...</code> is called <em>immediate expansion</em>. The value of <code>str2</code> is stable and will not change as <code>a</code> changes.</li>
+<li><code>a ?= ...</code> has the same effect as <code>=</code> when the variable <code>a</code> is not defined. Otherwise it does nothing.</li>
+</ul>
+<p>Note that the names introduced by targets are globally visible, ~~while those introduced by variables are probably not~~. When a variable is defined, ~~only the part of the Makefile below the variable definition can the variable be used in.~~</p>
+<p><code>Whatever, it is smart to put variable definitions before where they are using.</code></p>
+<hr />
+<p>An example:</p>
+<pre><code class="Makefile language-Makefile">BINARY=program
+
+.PHONY: build
+build: $(BINARY)
+
+.PHONY: clean
+clean:
+    rm *.o $(BINARY)
+
+function.o: function.cpp function.h
+    g++ function.cpp -o function.o
+
+main.o: main.cpp function.h
+    g++ main.cpp -o main.o
+
+$(BINARY): main.o function.o
+    g++ main.o function.o -o $(BINARY)
+</code></pre>
+<p>When <code>make build</code> is executed, <code>make</code> will check the target <code>program</code>, <code>main.o</code> <code>function.o</code>, <code>main.cpp</code> etc. . The process is recursive and all targets and files involved will be checked.</p>
+<p>~~The definition of variable <code>BINARY</code> must be placed before the line where it is used for the first time. Otherwise unexpected errors will occur, because references of undefined variables are treated as blank.~~</p>
+<p>Here are two phony targets: <code>build</code> and <code>clean</code>. When <code>make build</code>(<code>make</code> is also ok since <code>build</code> is the first target in the file) is executed in a shell, the build of the project will begin. When <code>make clean</code> is executed, <code>make</code> will clean the built binaries.</p>
+<h2 id="advance">Advance</h2>
+<h3 id="multiple-targets">Multiple Targets</h3>
+<p>Basic syntax:</p>
+<pre><code class="Makefile language-Makefile">target1 target2: dep # space separated
+    cmd
+</code></pre>
+<p>Same as:</p>
+<pre><code class="Makefile language-Makefile">target1: dep
+    cmd
+target2: dep
+    cmd
+</code></pre>
+<p>This means that <code>target1</code> and <code>target2</code> has the same rule.</p>
+<h3 id="automatic-variables">Automatic variables</h3>
+<ul>
+<li><code>$@</code>: the target name</li>
+<li><code>$?</code>: files in the dependency list more recent than the target</li>
+<li><code>$^</code>: all files in the dependency list, with duplicates removed</li>
+<li><code>$+</code>: all files in the dependency list, with duplicates kept</li>
+<li><code>$&lt;</code>: The first file in the dependency list</li>
+</ul>
+<p>Note that when using <code>$@</code> with multiple targets, <code>$@</code> will not select multiple targets. Only one of the targets will be selected.</p>
+<h3 id="wildcard">Wildcard</h3>
+<p>There are 2 wildcards in Makefile: <code>*</code> and <code>@</code>.</p>
+<hr />
+<ul>
+<li><code>*</code> will match files in the filesystem. Consider the following example.</li>
+</ul>
+<pre><code class="Makefile language-Makefile">SRCS := *.cpp
+SRCS2 := $(wildcard *.cpp) # put it in the wildcard function
+
+.PHONY: test
+test:
+    echo $(SRC)
+    echo $(SRC2)
+</code></pre>
+<p>When there are two files with suffix <code>.cpp</code>: <code>a.cpp</code>, <code>b.cpp</code>, the output will be</p>
+<pre><code>a.cpp b.cpp
+a.cpp b.cpp
+</code></pre>
+<p>When there is not any files with suffix <code>.cpp</code>, the output will be</p>
+<pre><code>*.cpp            # the pattern is printed
+            # yeah, empty
+</code></pre>
+<p>It is generally recommended to put wildcards in the <code>wildcard</code> function.</p>
+<hr />
+<ul>
+<li><code>%</code> is a little bit complex. Consider the following example.</li>
+</ul>
+<pre><code class="Makefile language-Makefile">OBJS = a.o b.o c.o
+
+.PHONY: build
+build: $(OBJS)
+    @echo generate executable
+    gcc $(OBJS)
+
+$(OBJS): %.o: %.c
+    @echo compile $&lt; to $@
+    gcc $&lt; -o $@ -c
+
+a.c:
+    echo 'int main() {return 0;}' &gt; $@
+
+%.c:
+    touch $@
+</code></pre>
+
+        </div>
+        <style type='text/css'>body {
+  font: 400 16px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #111;
+  background-color: #fdfdfd;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-feature-settings: "kern" 1;
+  -moz-font-feature-settings: "kern" 1;
+  -o-font-feature-settings: "kern" 1;
+  font-feature-settings: "kern" 1;
+  font-kerning: normal;
+  padding: 30px;
+}
+
+@media only screen and (max-width: 600px) {
+  body {
+    padding: 5px;
+  }
+
+  body > #content {
+    padding: 0px 20px 20px 20px !important;
+  }
+}
+
+body > #content {
+  margin: 0px;
+  max-width: 900px;
+  border: 1px solid #e1e4e8;
+  padding: 10px 40px;
+  padding-bottom: 20px;
+  border-radius: 2px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+hr {
+  color: #bbb;
+  background-color: #bbb;
+  height: 1px;
+  flex: 0 1 auto;
+  margin: 1em 0;
+  padding: 0;
+  border: none;
+}
+
+/**
+ * Links
+ */
+a {
+  color: #0366d6;
+  text-decoration: none; }
+  a:visited {
+    color: #0366d6; }
+  a:hover {
+    color: #0366d6;
+    text-decoration: underline; }
+
+pre {
+  background-color: #f6f8fa;
+  border-radius: 3px;
+  font-size: 85%;
+  line-height: 1.45;
+  overflow: auto;
+  padding: 16px;
+}
+
+/**
+  * Code blocks
+  */
+
+code {
+  background-color: rgba(27,31,35,.05);
+  border-radius: 3px;
+  font-size: 85%;
+  margin: 0;
+  word-wrap: break-word;
+  padding: .2em .4em;
+  font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,Courier,monospace;
+}
+
+pre > code {
+  background-color: transparent;
+  border: 0;
+  display: inline;
+  line-height: inherit;
+  margin: 0;
+  overflow: visible;
+  padding: 0;
+  word-wrap: normal;
+  font-size: 100%;
+}
+
+
+/**
+ * Blockquotes
+ */
+blockquote {
+  margin-left: 30px;
+  margin-top: 0px;
+  margin-bottom: 16px;
+  border-left-width: 3px;
+  padding: 0 1em;
+  color: #828282;
+  border-left: 4px solid #e8e8e8;
+  padding-left: 15px;
+  font-size: 18px;
+  letter-spacing: -1px;
+  font-style: italic;
+}
+blockquote * {
+  font-style: normal !important;
+  letter-spacing: 0;
+  color: #6a737d !important;
+}
+
+/**
+ * Tables
+ */
+table {
+  border-spacing: 2px;
+  display: block;
+  font-size: 14px;
+  overflow: auto;
+  width: 100%;
+  margin-bottom: 16px;
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+
+td {
+  padding: 6px 13px;
+  border: 1px solid #dfe2e5;
+}
+
+th {
+  font-weight: 600;
+  padding: 6px 13px;
+  border: 1px solid #dfe2e5;
+}
+
+tr {
+  background-color: #fff;
+  border-top: 1px solid #c6cbd1;
+}
+
+table tr:nth-child(2n) {
+  background-color: #f6f8fa;
+}
+
+/**
+ * Others
+ */
+
+img {
+  max-width: 100%;
+}
+
+p {
+  line-height: 24px;
+  font-weight: 400;
+  font-size: 16px;
+  color: #24292e; }
+
+ul {
+  margin-top: 0; }
+
+li {
+  color: #24292e;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5; }
+
+li + li {
+  margin-top: 0.25em; }
+
+* {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  color: #24292e; }
+
+a:visited {
+  color: #0366d6; }
+
+h1, h2, h3 {
+  border-bottom: 1px solid #eaecef;
+  color: #111;
+  /* Darker */ }</style>
+      </body>
+    </html>
