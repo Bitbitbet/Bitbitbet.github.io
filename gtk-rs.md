@@ -21,8 +21,10 @@ cargo add glib-build-tools --build
 ### Adding the build script `build.rs`
 The build script is responsible for integration of gresources integration during compilation. `glib-build-tools` should be added as a build dependency for this to work.
 
-After adding `glib-build-tools`, create `build.rs` at the root of the project and add the following content to it:
+After adding `glib-build-tools`, create `build.rs` at the root of the project with the following content:
 ```rust
+// /build.rs
+
 fn main() {
     glib_build_tools::compile_resources(
         &["resources"],
@@ -31,8 +33,10 @@ fn main() {
     );
 }
 ```
-And then register the gresources in the real code, typically main function in `src/main.rs`:
+And then register the gresources, normally at `main` at `src/main.rs`:
 ```rust
+// /src/main.rs
+
 fn main() -> glib::ExitCode {
     gio::resources_register_include!("compiled.gresource").expect("Failed to register gresources");
 
@@ -43,6 +47,8 @@ fn main() -> glib::ExitCode {
 ```
 Now gtk will access `/resources/resources.gresources.xml` and compile all resources specified by it during build time. Example of `resources.gresources.xml`:
 ```xml
+<!-- /resources/resources.gresources.xml -->
+
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
 	<gresource prefix="/org/application/example">
@@ -54,11 +60,11 @@ Now gtk will access `/resources/resources.gresources.xml` and compile all resour
 ## Creating custom GObject
 Every custom gobject requires two structs to construct. One of them is defined through marcro `glib::wrapper!`, and the other one is called *implementation struct* and is defined through Rust's struct syntax, and typically with `Imp` suffixing the name.
 
-The simplist custom gobject could be defined like this:
+Here is the simplist custom gobject:
 ```rust
 glib::wrapper! {
     pub struct CustomGObject(ObjectSubclass<custom_gobject_imp::CustomGObjectImp>);
-    //                                                      Semicolon here -- ^
+    //                                                          Semicolon here -- ^
 }
 
 mod custom_gobject_imp {
@@ -71,16 +77,14 @@ mod custom_gobject_imp {
         type Type = super::CustomGObject;
     }
 
-    #[gtk::template_callbacks]
     impl CustomGObjectImp {}
 
-    #[glib::derived_properties]
     impl ObjectImpl for CustomGObjectImp {}
 }
 ```
-This is a gobject named `CustomGObject`, and is identified as `ExampleApplicationCustomGObject` by glib at runtime.
+Above defines a gobject named `CustomGObject`, and is identified as `ExampleApplicationCustomGObject` by glib at runtime.
 ### Add properties
-Custom gobjects with properties could be defined as follows:
+Here is CustomGObjects with custom properties:
 ```rust
 glib::wrapper! {
     pub struct CustomGObject(ObjectSubclass<custom_gobject_imp::CustomGObjectImp>);
@@ -106,7 +110,7 @@ mod custom_gobject_imp {
     impl ObjectImpl for CustomGObjectImp {}
 }
 ```
-Custom derive macro `Properties` is added to the imp struct, followed by another macro `properties` to specifiy where methods like `custom_property`, `set_custom_property`, `connect_custom_property_notify` go to. This should be set to the struct defined through `glib::wrapper!` macro.
+Custom derive macro `Properties` is added to the imp struct, followed by another macro `properties` to specifiy where methods like `custom_property`, `set_custom_property`, `connect_custom_property_notify` go to. `wrapper_type` should be set to the struct defined through `glib::wrapper!` macro.
 
 Note that properties should be defined with interior mutability if you want it to be mutable, and use `self.obj().set_custom_property(...)` to change its value instead of direct manipulating so that the change could be noticed by glib.
 
@@ -138,7 +142,7 @@ mod custom_gobject_imp {
 }
 ```
 
-The list of objects and interfaces inside `@extends` and `@implements` could be referenced at documentation of the direct parent. For example, list of objects and interfaces that `adw::ApplicationWindow` has is documented at [here](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/1.0/class.ApplicationWindow.html#hierarchy). So to make our CustomGObject extend `adw::ApplicationWindow`, it should be defined like this:
+The list of objects and interfaces that should be specified inside `@extends` and `@implements` are documented at the official documentation of the direct parent. For example, list of objects and interfaces that `adw::ApplicationWindow` has is documented [here](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/1.0/class.ApplicationWindow.html#hierarchy). So here's how to make our CustomGObject extend `adw::ApplicationWindow`:
 ```rust
 glib::wrapper! {
     pub struct CustomGObject(ObjectSubclass<custom_gobject_imp::CustomGObjectImp>)
@@ -146,10 +150,28 @@ glib::wrapper! {
         @implements gio::ActionGroup, gio::ActionMap, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::Root, gtk::ShortcutManager;
 }
 ```
-Note that no need to add `glib::Object` and `glib::InitiallyUnowned` in `@extends`
+And implement several `Impl`s for the imp struct:
+```rust
+mod custom_gobject_imp {
+
+    /* ... */
+
+    impl ObjectImpl for CustomGObjectImp {}
+    impl WidgetImpl for MainWindowImp {}
+    impl WindowImpl for MainWindowImp {}
+    impl ApplicationWindowImpl for MainWindowImp {}
+    impl AdwApplicationWindowImpl for MainWindowImp {}
+    
+    /* ... */
+
+}
+
+```
+
+Note that there's no need to add `glib::Object` and `glib::InitiallyUnowned` in `@extends`
 
 ### Use Composite Template
-Composite template is very useful in defining UI.
+Composite template is very useful in constructing UI.
 ```rust
 glib::wrapper! {
     pub struct CustomGObject(ObjectSubclass<custom_gobject_imp::CustomGObjectImp>)
@@ -181,7 +203,6 @@ mod custom_gobject_imp {
     #[gtk::template_callbacks]
     impl CustomGObjectImp {}
 
-    #[glib::derived_properties]
     impl ObjectImpl for CustomGObjectImp {}
     impl WidgetImpl for MainWindowImp {}
     impl WindowImpl for MainWindowImp {}
