@@ -1,18 +1,18 @@
 I'll put something that I recognize as hard-to-memorize here during gtk-rs development.
 
-## Crates to add
+## Common Crates Used
 
 `gtk4`, the main crate for gtk4 development. Check features of gtk4 [here](https://crates.io/crates/gtk4#user-content-features-1).
 ```sh
 cargo add gtk4 --rename gtk --features v4_18
 ```
 ---
-`libadwaita`, the crate that adds modern look and feel to gtk. Check features of libadwaita [here](https://crates.io/crates/libadwaita/versions)
+`libadwaita`, a crate that adds modern look and feel to gtk. Check features of libadwaita [here](https://crates.io/crates/libadwaita/versions)
 ```sh
 cargo add libadwaita --rename adw --features v1_7
 ```
 ---
-`glib-build-tools`, the crate that should be added as a build dependency to allow integration for gresources.
+`glib-build-tools`, the crate that allows integration for gresources and should be added as a build dependency.
 ```sh
 cargo add glib-build-tools --build
 ```
@@ -57,7 +57,7 @@ Now gtk will access `/resources/resources.gresources.xml` and compile all resour
 	</gresource>
 </gresources>
 ```
-## Creating custom GObject
+## Creating Custom GObject
 Every custom gobject requires two structs to construct. One of them is defined through marcro `glib::wrapper!`, and the other one is called *implementation struct* and is defined through Rust's struct syntax, and typically with `Imp` suffixing the name.
 
 Here is the simplist custom gobject:
@@ -84,7 +84,7 @@ mod custom_gobject_imp {
 ```
 Above defines a gobject named `CustomGObject`, and is identified as `ExampleApplicationCustomGObject` by glib at runtime.
 ### Add properties
-Here is CustomGObjects with custom properties:
+Here is a custom gobject with custom properties:
 ```rust
 glib::wrapper! {
     pub struct CustomGObject(ObjectSubclass<custom_gobject_imp::CustomGObjectImp>);
@@ -115,7 +115,7 @@ Custom derive macro `Properties` is added to the imp struct, followed by another
 Note that properties should be defined with interior mutability if you want it to be mutable, and use `self.obj().set_custom_property(...)` to change its value instead of direct manipulating so that the change could be noticed by glib.
 
 ### Subclassing
-Custom gobjects can extend one of the existing gobjects inside gtk, libadwaita or glib etc., e.g.:
+Custom gobjects can extend one of the existing gobjects in gtk, libadwaita or glib etc.:
 
 ```rust
 glib::wrapper! {
@@ -210,9 +210,29 @@ mod custom_gobject_imp {
     impl AdwApplicationWindowImpl for MainWindowImp {}
 }
 ```
+#### UI template file
+`main_window.ui` should be defined inside `resources.gresources.xml`:
+```xml
+<file compressed="true" preprocess="xml-stripblanks">main_window.ui</file>
+```
+and here's what `main_window.ui` may look like:
+```xml
+<!-- /resources/main_window.ui -->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+	<template class="ExampleApplicationCustomGObject" parent="AdwApplicationWindow">
+		<property name="content">
+			<object class="GtkButton">
+				<property name="title">A Button</property>
+			</object>
+		</property>
+	</template>
+</interface>
+```
 
 ---
-Below is a custom gobject named CustomGObject, with CompositeTemplate and custom properties.
+Below is CustomGObject with CompositeTemplate and custom properties.
 ```rust
 glib::wrapper! {
     pub struct CustomGObject(ObjectSubclass<custom_gobject_imp::CustomGObjectImp>)
