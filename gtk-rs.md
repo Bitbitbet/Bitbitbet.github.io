@@ -69,7 +69,7 @@ glib::wrapper! {
 
 mod custom_gobject_imp {
     #[derive(Default)]
-    struct CustomGObjectImp {}
+    pub struct CustomGObjectImp {}
 
     #[glib::object_subclass]
     impl ObjectSubclass for CustomGObjectImp {
@@ -93,7 +93,7 @@ glib::wrapper! {
 mod custom_gobject_imp {
     #[derive(Default, Properties)]
     #[properties(wrapper_type = super::CustomGObject)]
-    struct CustomGObjectImp {
+    pub struct CustomGObjectImp {
         #[property(get, set)]
         custom_property: RefCell<String>,
     }
@@ -127,7 +127,7 @@ glib::wrapper! {
 
 mod custom_gobject_imp {
     #[derive(Default)]
-    struct CustomGObjectImp {}
+    pub struct CustomGObjectImp {}
 
     #[glib::object_subclass]
     impl ObjectSubclass for CustomGObjectImp {
@@ -171,18 +171,18 @@ mod custom_gobject_imp {
 Note that there's no need to add `glib::Object` and `glib::InitiallyUnowned` in `@extends`
 
 ### Use Composite Template
-Composite template is very useful in constructing UI.
+Composite template is very useful in constructing UI. Here's how to associate `CustomGObject` with a template file named `main_window.rs`:
 ```rust
 glib::wrapper! {
     pub struct CustomGObject(ObjectSubclass<custom_gobject_imp::CustomGObjectImp>)
-        @extends adw::ApplicationWindow, gtk::ApplicationWindow, gtk::Window, gtk::Widget
+        @extends adw::ApplicationWindow, gtk::ApplicationWindow, gtk::Window, gtk::Widget,
         @implements gio::ActionGroup, gio::ActionMap, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native, gtk::Root, gtk::ShortcutManager;
 }
 
 mod custom_gobject_imp {
     #[derive(Default, CompositeTemplate)]
     #[template(resource = "/org/application/example/main_window.ui")]
-    struct CustomGObjectImp {}
+    pub struct CustomGObjectImp {}
 
     #[glib::object_subclass]
     impl ObjectSubclass for CustomGObjectImp {
@@ -210,6 +210,7 @@ mod custom_gobject_imp {
     impl AdwApplicationWindowImpl for MainWindowImp {}
 }
 ```
+Now CustomGObject will follow the template file during the construction process.
 #### UI template file
 `main_window.ui` should be defined inside `resources.gresources.xml`:
 ```xml
@@ -224,7 +225,7 @@ and here's what `main_window.ui` may look like:
 	<template class="ExampleApplicationCustomGObject" parent="AdwApplicationWindow">
 		<property name="content">
 			<object class="GtkButton">
-				<property name="title">A Button</property>
+				<property name="label">A Button</property>
 			</object>
 		</property>
 	</template>
@@ -244,7 +245,7 @@ mod custom_gobject_imp {
     #[derive(Default, CompositeTemplate, Properties)]
     #[properties(wrapper_type = super::CustomGObject)]
     #[template(resource = "/org/application/example/main_window.ui")]
-    struct CustomGObjectImp {}
+    pub struct CustomGObjectImp {}
 
     #[glib::object_subclass]
     impl ObjectSubclass for CustomGObjectImp {
