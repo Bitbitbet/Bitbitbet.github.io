@@ -221,6 +221,7 @@ and here's what `main_window.ui` may look like:
 <!-- /resources/main_window.ui -->
 
 <?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="/usr/share/gtk-4.0/gtk4builder.rng"?>
 <interface>
 	<template class="ExampleApplicationCustomGObject" parent="AdwApplicationWindow">
 		<property name="content">
