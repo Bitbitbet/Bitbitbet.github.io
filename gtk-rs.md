@@ -40,7 +40,7 @@ And then register the gresources, normally at `main` at `src/main.rs`:
 fn main() -> glib::ExitCode {
     gio::resources_register_include!("compiled.gresource").expect("Failed to register gresources");
 
-    let app = Application::builder().application_id(/* Your application ID */).build();
+    let app = Application::builder().application_id("org.application.example").build();
     app.connect_activate(activate);
     app.run()
 }
@@ -57,6 +57,7 @@ Now gtk will access `/resources/resources.gresources.xml` and compile all resour
 	</gresource>
 </gresources>
 ```
+Note that resource prefix must match application id. In the example `org.application.example` matches `/org/application/example` word by word.
 ## Creating Custom GObject
 Every custom gobject requires two structs to construct. One of them is defined through marcro `glib::wrapper!`, and the other one is called *implementation struct* and is defined through Rust's struct syntax, and typically with `Imp` suffixing the name.
 
